@@ -1,0 +1,35 @@
+name: on_pull_request
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+jobs:
+  Test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: npm
+      - name: Prepare
+        run: |
+          yarn install
+          # yarn lint
+          # yarn test
+      - uses: fregante/daily-version-action@v2
+        id: daily-version
+      - name: build
+        run: yarn build
+      - name: Update manifest.json
+        run: |
+          npx dot-json@1 dist/manifest.json version ${{ steps.daily-version.outputs.version }}
+      - name: Archive
+        run: |
+          zip -r extension.zip ./dist
+      - name: Check Archive
+        run: |
+          rm -rf ./dist
+          unzip extension.zip
+          ls -lR ./dist
