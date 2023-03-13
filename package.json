@@ -1,7 +1,7 @@
 {
-  "name": "udemy-subtitle-collctor",
+  "name": "udemy-subtitles-collctor",
   "version": "1.0.0",
-  "description": "udemy-subtitle-collctor",
+  "description": "udemy-subtitles-collctor",
   "main": "index.js",
   "scripts": {
     "watch": "INLINE_RUNTIME_CHUNK=false webpack --config webpack/webpack.dev.js --watch",
@@ -14,7 +14,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/sofuetakuma112/udemy-subtitle-collctor.git"
+    "url": "https://github.com/sofuetakuma112/udemy-subtitles-collctor.git"
   },
   "dependencies": {
     "@chakra-ui/react": "^2.4.4",

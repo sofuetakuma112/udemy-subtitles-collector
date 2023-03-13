@@ -46,7 +46,7 @@ const Popup = () => {
       <Box w="540px">
         <Box bg="#4299E1" w="100%" p={4} color="white">
           <Heading as="h3" size="xl" isTruncated>
-            Udemy subtitle collctor
+            Udemy subtitles collctor
           </Heading>
         </Box>
         <Box pb={2} pl={4} pr={4}>

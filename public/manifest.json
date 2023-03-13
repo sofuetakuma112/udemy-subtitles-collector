@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "Udemy subtitle collctor",
-  "description": "Use Udemy's API to retrieve subtitle data for purchased courses",
+  "name": "Udemy subtitles collctor",
+  "description": "Use Udemy's API to retrieve subtitles data for purchased courses",
   "version": "1.1",
   "action": {
     "default_icon": "icon.png",

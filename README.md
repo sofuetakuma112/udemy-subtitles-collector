@@ -1,6 +1,6 @@
-# Udemy Subtitle Collector Extension
+# Udemy Subtitles Collector Extension
 
-Udemy Subtitle Collector Extension(Chrome Extension)
+Udemy Subtitles Collector Extension(Chrome Extension)
 
 ## Prerequisites
 

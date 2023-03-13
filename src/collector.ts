@@ -39,7 +39,7 @@ const getLectureDataUrl = (
   return url;
 };
 
-// https://greasyfork.org/en/scripts/422576-udemy-subtitle-downloader-v3/discussions/110421
+// https://greasyfork.org/en/scripts/422576-udemy-subtitles-downloader-v3/discussions/110421
 const getArgsLectureId = () => {
   const result = /(?<=lecture\/)\d*/.exec(document.URL);
   if (!result) return;
@@ -76,28 +76,14 @@ const getArgs = async (tabId: number) => {
   }
 };
 
-// idを入力
-// そのセッションのタイトルに戻る
-// const fetchLectureTitleById = async (id: string): Promise<string> => {
-//   let data = await fetchCourseData();
-//   let lectures = data.results; // コース配下のレクチャー配列
-//   const foundLecture = lectures.find(
-//     (lecture: any) => lecture._class === "lecture" && lecture.id === id
-//   );
-//   if (foundLecture) {
-//     return `${foundLecture.object_index}. ${foundLecture.title}`;
-//   } else {
-//     throw Error("lectureIdが一致するレクチャーがコース内になかった");
-//   }
-// };
-
 /// コース全体のデータを取得する
 const fetchCourseData = async (tabId: number): Promise<any> => {
   // Udemyでログイン済みのブラウザで実行していることが条件
   let access_token = getCookie("access_token");
   let bearer_token = `Bearer ${access_token}`;
   // getCourseDataUrl: Udemy apiからコース全体のデータURLを取得する
-  return fetch(getCourseDataUrl(tabId), {
+  const courceDataUrl = await getCourseDataUrl(tabId);
+  return fetch(courceDataUrl, {
     headers: {
       "x-udemy-authorization": bearer_token,
       authorization: bearer_token,
@@ -106,24 +92,70 @@ const fetchCourseData = async (tabId: number): Promise<any> => {
 };
 
 // コース全体のデータ URL
-const getCourseDataUrl = (tabId: number) => {
-  let courseId = fetchArgsCourseId(tabId);
+const getCourseDataUrl = async (tabId: number) => {
+  let courseId = await fetchArgsCourseId(tabId);
   let url = `https://www.udemy.com/api-2.0/courses/${courseId}/subscriber-curriculum-items/?page_size=1400&fields[lecture]=title,object_index,is_published,sort_order,created,asset,supplementary_assets,is_free&fields[quiz]=title,object_index,is_published,sort_order,type&fields[practice]=title,object_index,is_published,sort_order&fields[chapter]=title,object_index,is_published,sort_order&fields[asset]=title,filename,asset_type,status,time_estimation,is_external&caching_intent=True`;
   return url;
 };
 
 // テキスト形式のvttを{ from, to, subtitle }型の構造化されたものに変換する
 const convertToStructuredVtt = (vtt: string) => {
-  const regex =
+  let formatVtt = vtt.replace(/\n\n\d+\n/g, "\n\n");
+
+  let doubleFlag = false;
+  let tsFlag = false;
+  formatVtt =
+    formatVtt
+      .split("")
+      .filter((char: string, i: number) => {
+        if (formatVtt[i + 1] === "\n" && formatVtt[i + 2] === "\n") {
+          // ワンセットの終了
+          doubleFlag = false;
+          tsFlag = false;
+        } else if (char === "\n") {
+          if (formatVtt[i + 1] === "\n") {
+            // 文字列で\n\nが現れた
+            doubleFlag = true;
+          } else if (doubleFlag && !tsFlag) {
+            if (formatVtt[i - 1] === "\n") {
+              // 現在のcharが\n\nの後ろの\n
+            } else {
+              // ts直後の\n
+              tsFlag = true;
+            }
+          } else {
+            // 不要な\n
+            return false;
+          }
+        }
+        return true;
+      })
+      .join("") + "\n";
+
+  const subtitles = [];
+
+  const regexWithHour =
     /(\d{2}):(\d{2}):(\d{2}).(\d{3}) --> (\d{2}):(\d{2}):(\d{2}).(\d{3})\n(.*)\n/g;
-  const subtitles: Subtitle[] = [];
   let match;
-  while ((match = regex.exec(vtt))) {
+  while ((match = regexWithHour.exec(formatVtt))) {
     subtitles.push({
       from: `${match[1]}:${match[2]}:${match[3]}.${match[4]}`,
       to: `${match[5]}:${match[6]}:${match[7]}.${match[8]}`,
       subtitle: match[9].trim(),
     });
+  }
+
+  if (subtitles.length === 0) {
+    const regexWithoutHour =
+      /(\d{2}):(\d{2}).(\d{3}) --> (\d{2}):(\d{2}).(\d{3})\n(.*)\n/g;
+    let match;
+    while ((match = regexWithoutHour.exec(formatVtt))) {
+      subtitles.push({
+        from: `00:${match[1]}:${match[2]}.${match[3]}`,
+        to: `00:${match[4]}:${match[5]}.${match[6]}`,
+        subtitle: match[7].trim(),
+      });
+    }
   }
 
   return subtitles;
@@ -190,7 +222,8 @@ export const downloadCurrentLectureVtt = async (
   }
 
   // 字幕データのダウンロード
-  const url = captions.map((c) => c.url)[0];
+  const urls = captions.map((c) => c.url);
+  const url = urls[0];
   const vtt = await fetch(url).then((res) => res.text());
   const structuredVtt = convertToStructuredVtt(vtt);
   // バリデーション
